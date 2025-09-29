@@ -23,7 +23,7 @@ jobs:
           path: ~/.uv
           key: cache-8bdcbc4
 
-      - name: prime-cache-8bdcbc4 
+      - name: prime-cache-8bdcbc4
         run: |
           if [ "${{ steps.cache-step.outputs.cache-hit }}" == "true" ]; then
             echo "Cache hit!"
@@ -35,17 +35,19 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Fetch ISS location data
-        run: | # python
-          uv run --with requests python << 'EOF'
-          import requests
-
-          data = requests.get('http://api.open-notify.org/iss-now.json').text
-          with open('iss-location.jsonl', 'a') as f:
-              f.write(data + '\n')
-          'EOF'
+        run: |
+          uv run --with requests python - <<EOF
+          import requests, datetime, json
+          url = "http://api.open-notify.org/iss-now.json"
+          resp = requests.get(url)
+          data = resp.json()
+          data["logged_at"] = datetime.datetime.utcnow().isoformat()
+          with open("iss-location.jsonl", "a") as f:
+              f.write(json.dumps(data) + "\n")
+          EOF
 
       - name: Commit and push changes
-        run: | # shell
+        run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add iss-location.jsonl
